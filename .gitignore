@@ -1,8 +1,26 @@
 .DS_Store
 
+build/
+DerivedData
 
 *~.nib
 
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
 xcuserdata
-!xcshareddata
 
+*.xccheckout
+*.moved-aside
+*.xcuserstate
+*.xcscmblueprint
+
+*.hmap
+*.ipa
+
+Carthage/Build
