@@ -1,2 +1,8 @@
 .DS_Store
 
+
+*~.nib
+
+xcuserdata
+!xcshareddata
+
