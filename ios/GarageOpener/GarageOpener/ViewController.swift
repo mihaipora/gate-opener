@@ -61,12 +61,17 @@ class ViewController: UIViewController {
     
     func resolved(service: NSNetService) {
         mNetService = service
+        println("resolved")
         if mNetService!.addresses?.count > 0 {
+            println("have address")
             if let data: AnyObject? = mNetService!.addresses?.last {
                 var storage = sockaddr_storage()
                 data!.getBytes(&storage, length: sizeof(sockaddr_storage))
-                
-                if Int32(storage.ss_family) == AF_INET {
+                println(data)
+                println(Int32(storage.ss_family))
+                println(AF_INET)
+                if true || Int32(storage.ss_family) == AF_INET {
+                    println("is AF_INET")
                     let addr4 = withUnsafePointer(&storage) { UnsafePointer<sockaddr_in>($0).memory }
                     
                     let sAddr = String(CString: inet_ntoa(addr4.sin_addr), encoding: NSASCIIStringEncoding)
@@ -119,7 +124,8 @@ class ViewController: UIViewController {
         nsb = NSNetServiceBrowser()
         nsbdel = BMBrowserDelegate(viewController: self) //see bellow
         nsb!.delegate = nsbdel
-        nsb!.searchForServicesOfType("_gateservice._tcp", inDomain: "local")
+        nsb!.searchForServicesOfType("_gateservice._tcp.", inDomain: "local")
+//        nsb!.searchForServicesOfType("_http._tcp", inDomain: "local")
         
 
     }
@@ -187,6 +193,17 @@ class BMBrowserDelegate : NSObject, NSNetServiceBrowserDelegate, NSNetServiceDel
         println("netServiceDidResolveAddress");
         mVC.resolved(sender)
     }
+    
+    /* Sent to the NSNetService instance's delegate when an error in resolving the instance occurs. The error dictionary will contain two key/value pairs representing the error domain and code (see the NSNetServicesError enumeration above for error code constants).
+    */
+    func netService(sender: NSNetService, didNotResolve errorDict: [NSObject : AnyObject]) {
+        println("netServiceDidNOTResolve:")
+        for (key, val) in errorDict {
+            println("err " + (key as! String) + " " + (val as! String))
+        }
+        
+    }
+
 
 }
 
