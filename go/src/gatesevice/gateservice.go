@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"time"
 
-//	"github.com/oleksandr/bonjour"
 	"github.com/stianeikeland/go-rpio"
 )
 
@@ -47,9 +46,11 @@ func processRequests(requests chan int) {
 		}
 		pin := rpio.Pin(kPinMap[gate])
 		pin.Output()
-		pin.High()
-		time.Sleep(time.Second)
 		pin.Low()
+		//TODO: enable long push 3 seconds versus normal push 0.5 seconds.
+//		time.Sleep(3*time.Second)
+		time.Sleep(time.Second/2)
+		pin.High()
 		rpio.Close()
 		time.Sleep(time.Second)
 	}
@@ -64,13 +65,18 @@ func config(w http.ResponseWriter, r *http.Request) {
         }
 }
 
+func resetBoard() {
+  rpio.Open()
+  for _, pinNo := range kPinMap {
+    pin := rpio.Pin(pinNo)
+    pin.Output()
+    pin.High()
+  }
+  rpio.Close()
+}
+
 func main() {
-	// Run registration.
-//	_, err := bonjour.Register("gateopenservice", "_gateservice._tcp.", "", kPort, []string{"txtv=1", "app=test"}, nil)
-//	if err != nil {
-//		log.Fatalln(err.Error())
-//	}
-//	fmt.Println("Service registered")
+	resetBoard()
 
 	// Start request processing loop.
 	requests := make(chan int)
@@ -79,6 +85,7 @@ func main() {
 	// Handle http requests.
 	http.HandleFunc("/button", buttonHandler(requests))
 	http.HandleFunc("/config", config)
+	http.Handle("/images/", http.StripPrefix("/images/", http.FileServer(http.Dir("/data/images"))))
 	fmt.Println("Starting to listen ...")
 	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(kPort), nil))
 }
