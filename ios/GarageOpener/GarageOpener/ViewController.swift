@@ -49,7 +49,7 @@ class ViewController: UIViewController {
         let url = NSURL(string: mServiceUrl! + button)
         
         let task = NSURLSession.sharedSession().dataTaskWithURL(url!) {(data, response, error) in
-            println( NSString(data: data, encoding: NSUTF8StringEncoding))
+            print( NSString(data: data!, encoding: NSUTF8StringEncoding))
             dispatch_async(dispatch_get_main_queue(), {
                 self.ledText.backgroundColor = UIColor.whiteColor()
                 self.ledText.textColor = UIColor.blackColor()
@@ -61,38 +61,36 @@ class ViewController: UIViewController {
     
     func resolved(service: NSNetService) {
         mNetService = service
-        println("resolved")
+        print("resolved")
         if mNetService!.addresses?.count > 0 {
-            println("have address")
+            print("have address")
             if let data: AnyObject? = mNetService!.addresses?.last {
                 var storage = sockaddr_storage()
                 data!.getBytes(&storage, length: sizeof(sockaddr_storage))
-                println(data)
-                println(Int32(storage.ss_family))
-                println(AF_INET)
+                print(data)
+                print(Int32(storage.ss_family))
+                print(AF_INET)
                 if true || Int32(storage.ss_family) == AF_INET {
-                    println("is AF_INET")
+                    print("is AF_INET")
                     let addr4 = withUnsafePointer(&storage) { UnsafePointer<sockaddr_in>($0).memory }
                     
                     let sAddr = String(CString: inet_ntoa(addr4.sin_addr), encoding: NSASCIIStringEncoding)
-                    println(sAddr)
+                    print(sAddr)
                     
                     let sPort = String(mNetService!.port)
                     mServiceUrl = "http://" + sAddr! + ":" + sPort + "/button?k="
-                    println("ServiceURL:" + mServiceUrl!)
+                    print("ServiceURL:" + mServiceUrl!)
                     
                     let configUrl = "http://" + sAddr! + ":" + sPort + "/config"
                     let url = NSURL(string: configUrl)
                     let task = NSURLSession.sharedSession().dataTaskWithURL(url!) {(data, response, error) in
-                        println("config")
-                        println( NSString(data: data, encoding: NSUTF8StringEncoding))
+                        print("config")
+                        print( NSString(data: data!, encoding: NSUTF8StringEncoding))
                         //self.ledText.backgroundColor = UIColor.whiteColor()
-                        var parseError: NSError?
-                        let parsedObject: AnyObject? = NSJSONSerialization.JSONObjectWithData(data,
-                            options: NSJSONReadingOptions.AllowFragments,
-                            error:&parseError)
+                        let parsedObject: AnyObject? = try? NSJSONSerialization.JSONObjectWithData(data!,
+                            options: NSJSONReadingOptions.AllowFragments)
                         if let apps = parsedObject as? NSArray {
-                            for (index, value) in enumerate(apps) {
+                            for (index, value) in apps.enumerate() {
                                 if let label = value as? NSString {
                                     dispatch_async(dispatch_get_main_queue(), {
                                         self.mButtons[index].setTitle( String(label), forState: .Normal)
@@ -146,63 +144,62 @@ class BMBrowserDelegate : NSObject, NSNetServiceBrowserDelegate, NSNetServiceDel
     func netServiceBrowser(netServiceBrowser: NSNetServiceBrowser,
         didFindDomain domainName: String,
         moreComing moreDomainsComing: Bool) {
-            println("netServiceDidFindDomain")
+            print("netServiceDidFindDomain")
     }
     
     func netServiceBrowser(netServiceBrowser: NSNetServiceBrowser,
         didRemoveDomain domainName: String,
         moreComing moreDomainsComing: Bool) {
-            println("netServiceDidRemoveDomain")
+            print("netServiceDidRemoveDomain")
     }
     
     func netServiceBrowser(netServiceBrowser: NSNetServiceBrowser,
         didFindService netService: NSNetService,
         moreComing moreServicesComing: Bool) {
-            println("netServiceDidFindService")
+            print("netServiceDidFindService")
             mVC.mNetService = netService
             netService.delegate = self
             mVC.mNetService!.resolveWithTimeout(10)
-            println("resolved?")
-            println(netService.description)
-            println(netService.addresses?.count)
-            println(netService.hostName)
-            println(netService.port)
+            print("resolved?")
+            print(netService.description)
+            print(netService.addresses?.count)
+            print(netService.hostName)
+            print(netService.port)
             
     }
     
     func netServiceBrowser(netServiceBrowser: NSNetServiceBrowser,
         didRemoveService netService: NSNetService,
         moreComing moreServicesComing: Bool) {
-            println("netServiceDidRemoveService")
+            print("netServiceDidRemoveService")
     }
     
     func netServiceBrowserWillSearch(aNetServiceBrowser: NSNetServiceBrowser){
-        println("netServiceBrowserWillSearch")
+        print("netServiceBrowserWillSearch")
     }
     
-    func netServiceBrowser(netServiceBrowser: NSNetServiceBrowser,
-        didNotSearch errorInfo: [NSObject : AnyObject]) {
-            println("netServiceDidNotSearch")
-    }
+//    func netServiceBrowser(netServiceBrowser: NSNetServiceBrowser,
+//        didNotSearch errorInfo: [NSObject : AnyObject]) {
+//            print("netServiceDidNotSearch")
+//    }
     
     func netServiceBrowserDidStopSearch(netServiceBrowser: NSNetServiceBrowser) {
-        println("netServiceDidStopSearch")
+        print("netServiceDidStopSearch")
     }
     
     func netServiceDidResolveAddress(sender: NSNetService) {
-        println("netServiceDidResolveAddress");
+        print("netServiceDidResolveAddress");
         mVC.resolved(sender)
     }
     
     /* Sent to the NSNetService instance's delegate when an error in resolving the instance occurs. The error dictionary will contain two key/value pairs representing the error domain and code (see the NSNetServicesError enumeration above for error code constants).
     */
-    func netService(sender: NSNetService, didNotResolve errorDict: [NSObject : AnyObject]) {
-        println("netServiceDidNOTResolve:")
-        for (key, val) in errorDict {
-            println("err " + (key as! String) + " " + (val as! String))
-        }
-        
-    }
+//    func netService(sender: NSNetService, didNotResolve errorDict: [NSObject : AnyObject]) {
+//        print("netServiceDidNOTResolve:")
+//        for (key, val) in errorDict {
+//            print("err " + (key as! String) + " " + (val as! String))
+//        }
+//    }
 
 
 }
