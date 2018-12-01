@@ -6,11 +6,35 @@
 //
 
 import UIKit
+// FIXME: comparison operators with optionals were removed from the Swift Standard Libary.
+// Consider refactoring the code to use the non-optional operators.
+fileprivate func < <T : Comparable>(lhs: T?, rhs: T?) -> Bool {
+  switch (lhs, rhs) {
+  case let (l?, r?):
+    return l < r
+  case (nil, _?):
+    return true
+  default:
+    return false
+  }
+}
+
+// FIXME: comparison operators with optionals were removed from the Swift Standard Libary.
+// Consider refactoring the code to use the non-optional operators.
+fileprivate func > <T : Comparable>(lhs: T?, rhs: T?) -> Bool {
+  switch (lhs, rhs) {
+  case let (l?, r?):
+    return l > r
+  default:
+    return rhs < lhs
+  }
+}
+
 
 class ViewController: UIViewController {
-    var nsb:NSNetServiceBrowser?
+    var nsb:NetServiceBrowser?
     var nsbdel:BMBrowserDelegate?
-    var mNetService:NSNetService?
+    var mNetService:NetService?
     var mResolved:Bool?
     var mServiceUrl: String?
     var mButtons = [UIButton]()
@@ -25,56 +49,56 @@ class ViewController: UIViewController {
     
     @IBOutlet weak var ledText: UITextField!
     
-    @IBAction func button0Click(sender: AnyObject) {
+    @IBAction func button0Click(_ sender: AnyObject) {
         remoteClick("0")
     }
     
-    @IBAction func button1Click(sender: AnyObject) {
+    @IBAction func button1Click(_ sender: AnyObject) {
         remoteClick("1")
     }
     
-    @IBAction func button2Click(sender: AnyObject) {
+    @IBAction func button2Click(_ sender: AnyObject) {
         remoteClick("2")
     }
     
-    @IBAction func button3Click(sender: AnyObject) {
+    @IBAction func button3Click(_ sender: AnyObject) {
         remoteClick("3")
     }
     
-    func remoteClick(button: String) {
-        dispatch_async(dispatch_get_main_queue(), {
-            self.ledText.backgroundColor = UIColor.redColor()
-            self.ledText.textColor = UIColor.redColor()
+    func remoteClick(_ button: String) {
+        DispatchQueue.main.async(execute: {
+            self.ledText.backgroundColor = UIColor.red
+            self.ledText.textColor = UIColor.red
             })
-        let url = NSURL(string: mServiceUrl! + button)
+        let url = URL(string: mServiceUrl! + button)
         
-        let task = NSURLSession.sharedSession().dataTaskWithURL(url!) {(data, response, error) in
-            print( NSString(data: data!, encoding: NSUTF8StringEncoding))
-            dispatch_async(dispatch_get_main_queue(), {
-                self.ledText.backgroundColor = UIColor.whiteColor()
-                self.ledText.textColor = UIColor.blackColor()
+        let task = URLSession.shared.dataTask(with: url!, completionHandler: {(data, response, error) in
+            print( NSString(data: data!, encoding: String.Encoding.utf8.rawValue)!)
+            DispatchQueue.main.async(execute: {
+                self.ledText.backgroundColor = UIColor.white
+                self.ledText.textColor = UIColor.black
                 })
 
-        }
+        }) 
         task.resume()
     }
     
-    func resolved(service: NSNetService) {
+    func resolved(_ service: NetService) {
         mNetService = service
         print("resolved")
         if mNetService!.addresses?.count > 0 {
             print("have address")
-            if let data: AnyObject? = mNetService!.addresses?.last {
+            if let data: AnyObject = mNetService!.addresses?.last as AnyObject {
                 var storage = sockaddr_storage()
-                data!.getBytes(&storage, length: sizeof(sockaddr_storage))
+                data.getBytes(&storage, length: MemoryLayout<sockaddr_storage>.size)
                 print(data)
                 print(Int32(storage.ss_family))
                 print(AF_INET)
                 if true || Int32(storage.ss_family) == AF_INET {
                     print("is AF_INET")
-                    let addr4 = withUnsafePointer(&storage) { UnsafePointer<sockaddr_in>($0).memory }
+                    let addr4 = withUnsafePointer(to: &storage) { UnsafeRawPointer($0).load(as: sockaddr_in.self) }
                     
-                    let sAddr = String(CString: inet_ntoa(addr4.sin_addr), encoding: NSASCIIStringEncoding)
+                    let sAddr = String(cString: inet_ntoa(addr4.sin_addr), encoding: .ascii)
                     print(sAddr)
                     
                     let sPort = String(mNetService!.port)
@@ -82,24 +106,24 @@ class ViewController: UIViewController {
                     print("ServiceURL:" + mServiceUrl!)
                     
                     let configUrl = "http://" + sAddr! + ":" + sPort + "/config"
-                    let url = NSURL(string: configUrl)
-                    let task = NSURLSession.sharedSession().dataTaskWithURL(url!) {(data, response, error) in
+                    let url = URL(string: configUrl)
+                    let task = URLSession.shared.dataTask(with: url!, completionHandler: {(data, response, error) in
                         print("config")
-                        print( NSString(data: data!, encoding: NSUTF8StringEncoding))
+                        print( NSString(data: data!, encoding: String.Encoding.utf8.rawValue)!)
                         //self.ledText.backgroundColor = UIColor.whiteColor()
-                        let parsedObject: AnyObject? = try? NSJSONSerialization.JSONObjectWithData(data!,
-                            options: NSJSONReadingOptions.AllowFragments)
+                        let parsedObject: AnyObject? = try? JSONSerialization.jsonObject(with: data!,
+                            options: JSONSerialization.ReadingOptions.allowFragments) as AnyObject
                         if let apps = parsedObject as? NSArray {
-                            for (index, value) in apps.enumerate() {
+                            for (index, value) in apps.enumerated() {
                                 if let label = value as? NSString {
-                                    dispatch_async(dispatch_get_main_queue(), {
-                                        self.mButtons[index].setTitle( String(label), forState: .Normal)
-                                        self.mButtons[index].enabled = true
+                                    DispatchQueue.main.async(execute: {
+                                        self.mButtons[index].setTitle( String(label), for: UIControlState())
+                                        self.mButtons[index].isEnabled = true
                                     });
                                 }
                             }
                         }
-                    }
+                    }) 
                     
                     task.resume()
 
@@ -115,14 +139,14 @@ class ViewController: UIViewController {
         mButtons.append(button2)
         mButtons.append(button3)
         for button in mButtons {
-            button.setTitle( "", forState: .Normal)
+            button.setTitle( "", for: UIControlState())
         }
         // Do any additional setup after loading the view, typically from a nib.
         /// Net service browser.
-        nsb = NSNetServiceBrowser()
+        nsb = NetServiceBrowser()
         nsbdel = BMBrowserDelegate(viewController: self) //see bellow
         nsb!.delegate = nsbdel
-        nsb!.searchForServicesOfType("_gateservice._tcp.", inDomain: "local")
+        nsb!.searchForServices(ofType: "_gateservice._tcp.", inDomain: "local")
 //        nsb!.searchForServicesOfType("_http._tcp", inDomain: "local")
         
 
@@ -135,31 +159,31 @@ class ViewController: UIViewController {
 
 }
 
-class BMBrowserDelegate : NSObject, NSNetServiceBrowserDelegate, NSNetServiceDelegate {
+class BMBrowserDelegate : NSObject, NetServiceBrowserDelegate, NetServiceDelegate {
     var mVC:ViewController
     init(viewController vc:ViewController) {
         mVC = vc
     }
     
-    func netServiceBrowser(netServiceBrowser: NSNetServiceBrowser,
+    func netServiceBrowser(_ netServiceBrowser: NetServiceBrowser,
         didFindDomain domainName: String,
         moreComing moreDomainsComing: Bool) {
             print("netServiceDidFindDomain")
     }
     
-    func netServiceBrowser(netServiceBrowser: NSNetServiceBrowser,
+    func netServiceBrowser(_ netServiceBrowser: NetServiceBrowser,
         didRemoveDomain domainName: String,
         moreComing moreDomainsComing: Bool) {
             print("netServiceDidRemoveDomain")
     }
     
-    func netServiceBrowser(netServiceBrowser: NSNetServiceBrowser,
-        didFindService netService: NSNetService,
+    func netServiceBrowser(_ netServiceBrowser: NetServiceBrowser,
+        didFind netService: NetService,
         moreComing moreServicesComing: Bool) {
             print("netServiceDidFindService")
             mVC.mNetService = netService
             netService.delegate = self
-            mVC.mNetService!.resolveWithTimeout(10)
+            mVC.mNetService!.resolve(withTimeout: 10)
             print("resolved?")
             print(netService.description)
             print(netService.addresses?.count)
@@ -168,13 +192,13 @@ class BMBrowserDelegate : NSObject, NSNetServiceBrowserDelegate, NSNetServiceDel
             
     }
     
-    func netServiceBrowser(netServiceBrowser: NSNetServiceBrowser,
-        didRemoveService netService: NSNetService,
+    func netServiceBrowser(_ netServiceBrowser: NetServiceBrowser,
+        didRemove netService: NetService,
         moreComing moreServicesComing: Bool) {
             print("netServiceDidRemoveService")
     }
     
-    func netServiceBrowserWillSearch(aNetServiceBrowser: NSNetServiceBrowser){
+    func netServiceBrowserWillSearch(_ aNetServiceBrowser: NetServiceBrowser){
         print("netServiceBrowserWillSearch")
     }
     
@@ -183,11 +207,11 @@ class BMBrowserDelegate : NSObject, NSNetServiceBrowserDelegate, NSNetServiceDel
 //            print("netServiceDidNotSearch")
 //    }
     
-    func netServiceBrowserDidStopSearch(netServiceBrowser: NSNetServiceBrowser) {
+    func netServiceBrowserDidStopSearch(_ netServiceBrowser: NetServiceBrowser) {
         print("netServiceDidStopSearch")
     }
     
-    func netServiceDidResolveAddress(sender: NSNetService) {
+    func netServiceDidResolveAddress(_ sender: NetService) {
         print("netServiceDidResolveAddress");
         mVC.resolved(sender)
     }
