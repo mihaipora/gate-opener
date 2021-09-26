@@ -1,0 +1,29 @@
+<html>
+<script>
+function press(v) {
+  document.getElementById("k").value = v
+  document.getElementById("buttons").submit();  
+}
+
+</script>
+<body>
+
+
+
+<form id="buttons" action="/button">
+<input type="hidden" id="k" name="k" value="1" />
+<p style="text-align: center; font-size:50px">
+Gate Opener
+<br><br>
+<input style="font-size:50px;" type="button" id="b1" value="Main Gate" onClick="press(0)" />
+<br><br>
+<input style="font-size:50px;" type="button" id="b2" value="Main Garage" onClick="press(1)" />
+<br><br>
+<input style="font-size:50px;" type="button" id="b3" value="Secondary Gate" onClick="press(2)" />
+<br><br>
+<input style="font-size:50px;" type="button" id="b4" value="Secondary Garage" onClick="press(3)" />
+
+</p>
+</form>
+</body>
+</html>

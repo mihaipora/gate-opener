@@ -17,6 +17,7 @@ var kNameMap = [...]string{"Main Gate", "Main Garage", "Side Gate", "Second Gara
 
 func asyncPushButton(requests chan int, value int) {
 	requests <- value
+        //fmt.Println("push button %v", value)
 }
 
 func buttonHandler(requests chan int) func(http.ResponseWriter, *http.Request) {
@@ -28,7 +29,8 @@ func buttonHandler(requests chan int) func(http.ResponseWriter, *http.Request) {
 		}
 		//TODO: remove sleep
                 time.Sleep(time.Second)
-                w.Write([]byte("Got It!"))
+                //w.Write([]byte("Got It!"))
+                http.Redirect(w, r, "/ui", http.StatusFound)
 	}
 }
 
@@ -86,6 +88,7 @@ func main() {
 	http.HandleFunc("/button", buttonHandler(requests))
 	http.HandleFunc("/config", config)
 	http.Handle("/images/", http.StripPrefix("/images/", http.FileServer(http.Dir("/data/images"))))
+        http.Handle("/ui", http.StripPrefix("/ui", http.FileServer(http.Dir("ui"))))
 	fmt.Println("Starting to listen ...")
 	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(kPort), nil))
 }
